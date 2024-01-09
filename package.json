@@ -1,5 +1,6 @@
 {
   "scripts": {
-    "up": "./cmd.sh up"
+    "up": "./cmd.sh up",
+    "gen_env_example": "npx gen-env-template@2.1.1 .env .env.example"
   }
 }

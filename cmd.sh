@@ -25,10 +25,9 @@ COMPOSE_STACKS=(
 #  "-f" "compose/photoprism/docker-compose.yml"
 )
 
-
 up() {
   echo "DOCKER_HOST: $DOCKER_HOST"
-  docker compose -p "${DOCKER_STACK_NAME}" --env-file .env \
+  docker compose -p "${STACK_NAME}" --env-file .env \
     "${COMPOSE_STACKS[@]}" \
     up --detach --remove-orphans
 }
