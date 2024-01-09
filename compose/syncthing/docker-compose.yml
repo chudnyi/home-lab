@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  syncthing:
+    image: syncthing/syncthing:1.27.2
+    container_name: syncthing
+    hostname: syncthing
+    environment:
+      - PUID=${UID:-1000}
+      - PGID=${GID:-1000}
+    volumes:
+      - /mnt/vault/syncthing:/var/syncthing
+      - /mnt/media:/var/syncthing/media
+    ports: # NOTE: 8384 not forwarded, this is handled by traefik
+      - "22000:22000"
+      - "21027:21027/udp"
+#    network_mode: host
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.syncthing.rule=Host(`syncthing.${DOMAIN}`)"
+      - "traefik.http.routers.syncthing.entrypoints=websecure"
+      - "traefik.http.routers.syncthing.service=syncthing"
+      - "traefik.http.routers.syncthing.tls.certresolver=regru"
+      - "traefik.http.services.syncthing.loadbalancer.server.port=8384"
+
+# https://techoverflow.net/2023/10/27/syncthing-docker-compose-setup-using-traefik-as-reverse-proxy-with-http-basic-auth/

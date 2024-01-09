@@ -1,0 +1,65 @@
+version: "3.9"
+
+#volumes:
+#  portainer_data:
+#  postgres_data:
+#  mysql_data:
+#  redis_data:
+#  directus_data:
+#  directus_data_uploads:
+#  directus_data_database:
+#  directus_data_extensions:
+#  ghost_data:
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/var/traefik/letsencrypt:/letsencrypt"
+    environment:
+      # https://go-acme.github.io/lego/dns/regru/
+      REGRU_USERNAME: ${REGRU_USERNAME}
+      REGRU_PASSWORD: ${REGRU_PASSWORD}
+      REGRU_PROPAGATION_TIMEOUT: 7200
+      REGRU_POLLING_INTERVAL: 30
+    command:
+#      - "--log.level=DEBUG"
+      - "--log.level=ERROR"
+      - "--api"
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+#      - "--metrics.prometheus=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--certificatesresolvers.regru.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.regru.acme.dnschallenge=true"
+      - "--certificatesresolvers.regru.acme.dnschallenge.provider=regru"
+      - "--certificatesresolvers.regru.acme.storage=/letsencrypt/acme.json"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+      # global wildcard certificates
+      - "traefik.http.routers.wildcard-certs.tls.certresolver=regru"
+      - "traefik.http.routers.wildcard-certs.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.wildcard-certs.tls.domains[0].sans=*.${DOMAIN}"
+
+      # dashboard
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.service=api@internal"
+#      - "traefik.http.routers.traefik.middlewares=authtraefik"

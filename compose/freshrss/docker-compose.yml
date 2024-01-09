@@ -1,0 +1,23 @@
+version: "3.9"
+
+volumes:
+  freshrss_data:
+
+services:
+  freshrss:
+    image: lscr.io/linuxserver/freshrss:1.23.1 # https://hub.docker.com/r/linuxserver/freshrss
+    container_name: freshrss
+    volumes:
+      - freshrss_data:/config
+    restart: unless-stopped
+    environment:
+      - PUID=${UID:-1000}
+      - PGID=${GID:-1000}
+      - TZ=Europe/Moscow
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.freshrss.rule=Host(`freshrss.${DOMAIN}`)"
+      - "traefik.http.routers.freshrss.entrypoints=websecure"
+      - "traefik.http.routers.freshrss.service=freshrss"
+      - "traefik.http.routers.freshrss.tls.certresolver=regru"
+      - "traefik.http.services.freshrss.loadbalancer.server.port=80"

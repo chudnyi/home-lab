@@ -1,0 +1,27 @@
+# https://github.com/louislam/uptime-kuma
+version: "3.9"
+
+volumes:
+  uptime-kuma:
+
+services:
+  uptime-kuma:
+    # https://hub.docker.com/r/louislam/uptime-kuma/tags
+    image: louislam/uptime-kuma:1.23.11-alpine
+    container_name: uptime-kuma
+#    ports:
+#      - 3001:3001
+    environment:
+      - PUID=${UID:-1000}
+      - PGID=${GID:-1000}
+      - TZ=Europe/Moscow
+    volumes:
+      - uptime-kuma:/app/data
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime-kuma.rule=Host(`uptime-kuma.${DOMAIN}`)"
+      - "traefik.http.routers.uptime-kuma.entrypoints=websecure"
+      - "traefik.http.routers.uptime-kuma.service=uptime-kuma"
+      - "traefik.http.routers.uptime-kuma.tls.certresolver=regru"
+      - "traefik.http.services.uptime-kuma.loadbalancer.server.port=3001"

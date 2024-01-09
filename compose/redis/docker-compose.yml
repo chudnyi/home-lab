@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7.2.3-alpine # https://hub.docker.com/_/redis/tags
+    container_name: redis
+    restart: unless-stopped
+#    ports:
+#      - "6379:6379"
+#    volumes:
+#      - ./redis.conf:/redis.conf
+#    command: ["redis-server", "/redis.conf"]
+    environment:
+      PORT: 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 3

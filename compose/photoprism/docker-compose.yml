@@ -1,0 +1,101 @@
+version: '3.9'
+
+## FOR TEST AND DEVELOPMENT ONLY, DO NOT USE IN PRODUCTION   ##
+## Setup: https://docs.photoprism.app/developer-guide/setup/ ##
+
+volumes:
+  photoprism_db_data:
+
+services:
+  ## Stable Release
+  photoprism:
+    image: photoprism/photoprism:231128
+    container_name: photoprism
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    ports:
+      - "2344:2342" # HTTP port (host:container)
+    environment:
+      PHOTOPRISM_INIT: "https"
+      PHOTOPRISM_UID: ${UID:-1000}                         # user id, should match your host user id
+      PHOTOPRISM_GID: ${GID:-1000}                         # group id
+      PHOTOPRISM_ADMIN_USER: "${PHOTOPRISM_USER}"                       # admin login username
+      PHOTOPRISM_ADMIN_PASSWORD: "${PHOTOPRISM_PASSWORD}"              # initial admin password (8-72 characters)
+      PHOTOPRISM_AUTH_MODE: "password"                     # authentication mode (public, password)
+      PHOTOPRISM_SITE_URL: "https://photoprism.${DOMAIN}/"  # server URL in the format "http(s)://domain.name(:port)/(path)"
+      PHOTOPRISM_SITE_CAPTION: "Photos"
+      PHOTOPRISM_SITE_DESCRIPTION: "Tags and finds pictures without getting in your way!"
+      PHOTOPRISM_SITE_AUTHOR: "${PHOTOPRISM_SITE_AUTHOR}"
+      PHOTOPRISM_DEBUG: "false"
+      PHOTOPRISM_READONLY: "false"
+      PHOTOPRISM_EXPERIMENTAL: "true"
+      PHOTOPRISM_HTTP_MODE: "release"
+      PHOTOPRISM_HTTP_HOST: "0.0.0.0"
+      PHOTOPRISM_HTTP_PORT: 2342
+      PHOTOPRISM_HTTP_COMPRESSION: "gzip"                  # improves transfer speed and bandwidth utilization (none or gzip)
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"
+      PHOTOPRISM_DATABASE_SERVER: "photoprism_db:4001"
+      PHOTOPRISM_DATABASE_NAME: "photoprism"
+      PHOTOPRISM_DATABASE_USER: "root"
+      PHOTOPRISM_DATABASE_PASSWORD: "photoprism"
+      PHOTOPRISM_DISABLE_CHOWN: "false"       # disables updating storage permissions via chmod and chown on startup
+      PHOTOPRISM_DISABLE_BACKUPS: "true"     # disables backing up albums and photo metadata to YAML files
+      PHOTOPRISM_DISABLE_WEBDAV: "true"      # disables built-in WebDAV server
+      PHOTOPRISM_DISABLE_SETTINGS: "false"    # disables settings UI and API
+      PHOTOPRISM_DISABLE_PLACES: "false"      # disables reverse geocoding and maps
+      PHOTOPRISM_DISABLE_EXIFTOOL: "false"    # disables creating JSON metadata sidecar files with ExifTool
+      PHOTOPRISM_DISABLE_TENSORFLOW: "false"  # disables all features depending on TensorFlow
+      PHOTOPRISM_DETECT_NSFW: "false"         # automatically flags photos as private that MAY be offensive (requires TensorFlow)
+      PHOTOPRISM_UPLOAD_NSFW: "false"         # allows uploads that MAY be offensive (no effect without TensorFlow)
+      PHOTOPRISM_RAW_PRESETS: "false"         # enables applying user presets when converting RAW images (reduces performance)
+      PHOTOPRISM_THUMB_FILTER: "lanczos"      # resample filter, best to worst: blackman, lanczos, cubic, linear
+      PHOTOPRISM_THUMB_UNCACHED: "false"       # enables on-demand thumbnail rendering (high memory and cpu usage)
+      PHOTOPRISM_THUMB_SIZE: 2048             # pre-rendered thumbnail size limit (default 2048, min 720, max 7680)
+      # PHOTOPRISM_THUMB_SIZE: 4096           # Retina 4K, DCI 4K (requires more storage); 7680 for 8K Ultra HD
+      PHOTOPRISM_THUMB_SIZE_UNCACHED: 7680    # on-demand rendering size limit (default 7680, min 720, max 7680)
+      PHOTOPRISM_JPEG_SIZE: 7680              # size limit for converted image files in pixels (720-30000)
+      PHOTOPRISM_JPEG_QUALITY: 85             # a higher value increases the quality and file size of JPEG images and thumbnails (25-100)
+      TF_CPP_MIN_LOG_LEVEL: 0                 # show TensorFlow log messages for development
+      PHOTOPRISM_DEFAULT_LOCALE: ru
+    working_dir: "/photoprism"
+    volumes:
+      - "/mnt/media/cache/photoprism:/photoprism/storage"
+      - "/mnt/vault/syncthing/photo:/photoprism/originals"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "3" # CPU cores
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.photoprism.rule=Host(`photoprism.${DOMAIN}`)"
+      - "traefik.http.routers.photoprism.entrypoints=websecure"
+      - "traefik.http.routers.photoprism.service=photoprism"
+      - "traefik.http.routers.photoprism.tls.certresolver=regru"
+      - "traefik.http.services.photoprism.loadbalancer.server.port=2342"
+
+  ## MariaDB 11.2 Database Server
+  ## Docs: https://mariadb.com/docs/reference/
+  ## Release Notes: https://mariadb.com/kb/en/release-notes-mariadb-11-2-series/
+  photoprism_db:
+    image: mariadb:11.2
+    container_name: photoprism_db
+    security_opt: # see https://github.com/MariaDB/mariadb-docker/issues/434#issuecomment-1136151239
+      - seccomp:unconfined
+      - apparmor:unconfined
+    command: --port=4001 --innodb-strict-mode=1 --innodb-buffer-pool-size=256M --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
+    expose:
+      - "4001"
+    ports:
+      - "4003:4001" # database port (host:container)
+    volumes:
+      - "/mnt/media/cache/photoprism/mariadb-init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "photoprism_db_data:/var/lib/mysql"
+    environment:
+      MARIADB_AUTO_UPGRADE: "1"
+      MARIADB_INITDB_SKIP_TZINFO: "1"
+      MARIADB_DATABASE: "photoprism"
+      MARIADB_USER: "photoprism"
+      MARIADB_PASSWORD: "photoprism"
+      MARIADB_ROOT_PASSWORD: "photoprism"

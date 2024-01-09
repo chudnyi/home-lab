@@ -1,0 +1,32 @@
+# https://jellyfin.org/docs/general/installation/container
+version: '3.9'
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.8.13
+    container_name: jellyfin
+    user: ${UID:-1000}:${GID:-1000}
+    volumes:
+      - /mnt/media/jellyfin/config:/config
+      - /mnt/media/jellyfin/cache:/cache
+      - /mnt/media/downloads/media:/media
+    ports:
+#      - 8096:8096
+      - 1900:1900/udp # DLNA
+      - 7359:7359/udp
+    restart: 'unless-stopped'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN}`)"
+      - "traefik.http.routers.jellyfin.entrypoints=websecure"
+      - "traefik.http.routers.jellyfin.service=jellyfin"
+      - "traefik.http.routers.jellyfin.tls.certresolver=regru"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+
+    # Optional - alternative address used for autodiscovery
+    #    environment:
+    #      - JELLYFIN_PublishedServerUrl=http://example.com
+    #      - JELLYFIN_PublishedServerUrl=http://192.168.1.82
+    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"

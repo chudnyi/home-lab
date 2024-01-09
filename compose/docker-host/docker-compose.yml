@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  docker-host:
+    image: qoomon/docker-host:3.1.3
+    container_name: docker-host
+    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+    mem_limit: 8M
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      # webmin
+      - "traefik.http.routers.webmin.rule=Host(`webmin.${DOMAIN}`)"
+      - "traefik.http.routers.webmin.entrypoints=websecure"
+      - "traefik.http.routers.webmin.service=webmin"
+      - "traefik.http.routers.webmin.tls.certresolver=regru"
+      - "traefik.http.services.webmin.loadbalancer.server.port=10000"

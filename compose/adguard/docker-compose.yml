@@ -1,0 +1,32 @@
+version: "3.9"
+
+volumes:
+  adguard_work:
+  adguard_conf:
+
+services:
+  adguard:
+     image: adguard/adguardhome:v0.107.43
+     container_name: adguard
+     restart: unless-stopped
+     ports:
+       - 53:53/tcp
+       - 53:53/udp
+       - 784:784/udp
+       - 853:853/tcp
+       - 3003:3000/tcp
+#       - 83:80/tcp
+     volumes:
+       - adguard_work:/opt/adguardhome/work
+       - adguard_conf:/opt/adguardhome/conf
+     environment:
+       - PUID=${UID:-1000}
+       - PGID=${GID:-1000}
+       - TZ=Europe/Moscow
+     labels:
+       - "traefik.enable=true"
+       - "traefik.http.routers.adguard.rule=Host(`adguard.${DOMAIN}`)"
+       - "traefik.http.routers.adguard.entrypoints=websecure"
+       - "traefik.http.routers.adguard.service=adguard"
+       - "traefik.http.routers.adguard.tls.certresolver=regru"
+       - "traefik.http.services.adguard.loadbalancer.server.port=80"

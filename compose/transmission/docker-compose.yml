@@ -1,0 +1,34 @@
+version: "3.9"
+volumes:
+  transmission_config:
+services:
+  transmission:
+    image: lscr.io/linuxserver/transmission:4.0.5
+    container_name: transmission
+    environment:
+      - PUID=${UID:-1000}
+      - PGID=${GID:-1000}
+      - TZ=Europe/Moscow
+      #      - TRANSMISSION_WEB_HOME= #optional
+      - USER=${TRANSMISSION_USER}
+      - PASS=${TRANSMISSION_PASSWORD}
+      #      - WHITELIST=iplist #optional
+      #      - PEERPORT=peerport #optional
+#      - "HOST_WHITELIST=dnsname list" #optional
+    volumes:
+      - transmission_config:/config
+      - /mnt/media/downloads/watch:/watch
+      - /mnt/media/downloads:/downloads
+      - /mnt/vault:/downloads/vault
+    ports:
+      - 9091:9091 # для Transmission Remote GUI
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN}`)"
+      - "traefik.http.routers.transmission.entrypoints=websecure"
+      - "traefik.http.routers.transmission.service=transmission"
+      - "traefik.http.routers.transmission.tls.certresolver=regru"
+      - "traefik.http.services.transmission.loadbalancer.server.port=9091"
