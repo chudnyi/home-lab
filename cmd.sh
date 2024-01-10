@@ -9,7 +9,7 @@ source .env
 # Команды docker compose будут выполняться на этом хосте
 export DOCKER_HOST="ssh://$SERVER_USER@$SERVER_HOST"
 
-# Чтобы убрать сервис с сервера, закомментируй его конфиг в списке ниже
+# Список сервисов. Контейнеры не из списка, будут остановлены и удалены.
 COMPOSE_STACKS=(
   "-f" "compose/traefik/docker-compose.yml"
   "-f" "compose/docker-host/docker-compose.yml"
@@ -23,6 +23,10 @@ COMPOSE_STACKS=(
   "-f" "compose/adguard/docker-compose.yml"
 #  "-f" "compose/redis/docker-compose.yml"
 #  "-f" "compose/photoprism/docker-compose.yml"
+#  "-f" "compose/envlinks/docker-compose.yml"
+#  "-f" "compose/dashy/docker-compose.yml"
+#  "-f" "compose/homepage/docker-compose.yml"
+  "-f" "compose/homeassistant/docker-compose.yml"
 )
 
 up() {

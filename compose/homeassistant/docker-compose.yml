@@ -1,0 +1,39 @@
+version: '3.9'
+volumes:
+  homeassistant_config:
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: homeassistant/home-assistant:2024.1
+    volumes:
+      - homeassistant_config:/config
+      - /etc/localtime:/etc/localtime:ro
+#    devices:
+#      - /dev/ttyUSB0:/dev/ttyUSB0
+#      - /dev/ttyUSB1:/dev/ttyUSB1
+#      - /dev/ttyACM0:/dev/ttyACM0
+    restart: unless-stopped
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_BIND_SERVICE
+      - SYS_ADMIN
+#    network_mode: host
+    environment:
+      TZ: Europe/Moscow
+      HC_IGNORE_SSL: "True"
+      PUID: ${UID:-1000}
+      PGID: ${GID:-1000}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN}`)"
+      - "traefik.http.routers.homeassistant.entrypoints=websecure"
+      - "traefik.http.routers.homeassistant.service=homeassistant"
+      - "traefik.http.routers.homeassistant.tls.certresolver=regru"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
