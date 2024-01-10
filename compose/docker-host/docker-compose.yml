@@ -5,7 +5,10 @@ services:
     image: qoomon/docker-host:3.1.3
     container_name: docker-host
     cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
-    mem_limit: 8M
+    deploy:
+      resources: # https://docs.docker.com/compose/compose-file/deploy/#resources
+        limits:
+          memory: 8M
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
