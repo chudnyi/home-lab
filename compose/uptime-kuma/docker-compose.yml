@@ -9,7 +9,7 @@ networks:
 services:
   uptime-kuma:
     # https://hub.docker.com/r/louislam/uptime-kuma/tags
-    image: louislam/uptime-kuma:1.23.11-alpine
+    image: louislam/uptime-kuma:1.23.13-alpine
     container_name: uptime-kuma
 #    ports:
 #      - 3001:3001
