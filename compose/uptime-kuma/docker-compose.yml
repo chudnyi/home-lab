@@ -1,8 +1,10 @@
 # https://github.com/louislam/uptime-kuma
-version: "3.9"
+name: uptime-kuma
 
-volumes:
-  uptime-kuma:
+networks:
+  frontend:
+    name: frontend
+    external: true
 
 services:
   uptime-kuma:
@@ -11,13 +13,15 @@ services:
     container_name: uptime-kuma
 #    ports:
 #      - 3001:3001
+    volumes:
+      - /opt/uptime-kuma/data:/app/data
+    restart: unless-stopped
+    networks:
+      - frontend
     environment:
       - PUID=${UID:-1000}
       - PGID=${GID:-1000}
       - TZ=Europe/Moscow
-    volumes:
-      - uptime-kuma:/app/data
-    restart: unless-stopped
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.uptime-kuma.rule=Host(`uptime-kuma.${DOMAIN}`)"
